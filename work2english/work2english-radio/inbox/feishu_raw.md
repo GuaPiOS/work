@@ -19,3 +19,15 @@ Message ID: om_x100b6bc490618ca4c16b628c7538b47
 Message ID: om_x100b6bc6bac2d8a8c23d4c859379907
 
 我认为用户模型和经销商模型很重要。
+
+## 17:41 - p2p text
+
+Message ID: om_x100b6bc282f66080c00db82eebcb6b2
+
+这个谁定的？
+
+## 17:45 - p2p text
+
+Message ID: om_x100b6bc292d830b8c43c5c926618eee
+
+这个代理商应该在说谎。

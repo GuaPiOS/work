@@ -64,7 +64,6 @@ interface VoiceOSStore {
 // The <audio> element is a DOM handle, not React state. Kept module-scoped.
 let audioEl: HTMLAudioElement | null = null;
 let lastSignature = "";
-let pendingSwitch = false; // new content arrived mid-playback; apply at boundary
 
 const EMPTY_CONNECTION: ConnectionStatus = { feishu: "idle", llm: "idle", tts: "idle", player: "idle" };
 const EMPTY_DIAG: Diagnostics = { feishu: "", llm: "", tts: "", player: "" };
@@ -134,7 +133,11 @@ export const useVoiceOS = create<VoiceOSStore>((set, get) => {
     if (isNew && s.items?.length) {
       const startIdx = get().mode === "auto" ? latestBatchStart(s.items) : 0;
       if (playing) {
-        pendingSwitch = true;
+        // New content was appended to the list. Do NOT interrupt or pause the
+        // currently playing item — just refresh items[] + soft fields and keep
+        // the current position. The current item plays to the end, then onended
+        // advances in list order, so the new content plays when its natural
+        // turn arrives (never injected mid-item).
         set({
           items: s.items,
           dailyBriefing: s.daily_briefing,
@@ -142,7 +145,7 @@ export const useVoiceOS = create<VoiceOSStore>((set, get) => {
           generating: s.generating, backendError: s.last_error,
           connectionStatus: s.connectionStatus, diagnostics: s.diagnostics ?? EMPTY_DIAG,
           tts: s.tts ?? get().tts, ready: true,
-          ambientThought: "New content ready — plays after the current item.",
+          ambientThought: "New content added — plays in list order after the current item.",
         });
         return;
       }
@@ -230,13 +233,8 @@ export const useVoiceOS = create<VoiceOSStore>((set, get) => {
         if (el.duration && isFinite(el.duration)) set({ total: el.duration, remaining: el.duration });
       };
       el.onended = () => {
-        if (pendingSwitch) {
-          pendingSwitch = false;
-          const items = get().items;
-          const start = get().mode === "auto" ? latestBatchStart(items) : 0;
-          void loadIndex(start, true);
-          return;
-        }
+        // Advance through the list in order, wrapping at the end. New content
+        // is appended, so it plays naturally when reached — never injected.
         const next = get().currentIndex + 1 >= get().items.length ? 0 : get().currentIndex + 1;
         void loadIndex(next, true);
       };
@@ -302,7 +300,6 @@ export const useVoiceOS = create<VoiceOSStore>((set, get) => {
 
     stop: () => {
       if (audioEl) { audioEl.pause(); audioEl.currentTime = 0; }
-      pendingSwitch = false;
       set((s) => ({
         status: "idle",
         currentIndex: 0,
@@ -323,7 +320,6 @@ export const useVoiceOS = create<VoiceOSStore>((set, get) => {
     },
 
     playItem: (index) => {
-      pendingSwitch = false;
       void beginPlaying(index);
     },
 
