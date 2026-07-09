@@ -1,0 +1,1 @@
+{"_schema":"project_decision","_version":"2.0","_description":"Append-only project decisions.","fields":["timestamp","decision","rationale","alternatives","owner","scope","status","supersedes"]}

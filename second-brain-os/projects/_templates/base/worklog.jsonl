@@ -1,0 +1,1 @@
+{"_schema":"project_worklog","_version":"2.0","_description":"Append-only project work log.","fields":["timestamp","actor","action","summary","artifact_refs","next_step"]}

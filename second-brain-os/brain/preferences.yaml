@@ -1,0 +1,25 @@
+language: zh-CN
+workspace_convention: english_paths_chinese_docs
+default_entry_order:
+  - state/system-status.md
+  - state/current-focus.md
+  - brain/project-routing.md
+  - brain/principles.md
+  - brain/ontology.md
+project_entry_order:
+  - project.yaml
+  - session-brief.md
+  - context/routing/current-readset.md
+  - context/summaries/compact-state.md
+  - next-actions.md
+  - open-questions.md
+default_automation_profile: assisted
+default_priority: P1
+jsonl_mode: append_only
+sync_mode: file_first
+pad_policy: session_cleanup_required
+artifact_policy: artifact_first
+summary_policy: compact_state_mandatory
+long_file_threshold_lines: 160
+long_file_threshold_kb: 8
+startup_file_budget: 6

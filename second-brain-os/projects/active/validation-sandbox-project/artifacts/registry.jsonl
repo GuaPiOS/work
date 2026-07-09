@@ -1,0 +1,1 @@
+{"_schema":"artifact_registry","_version":"2.0","_description":"Canonical artifact registry for a project.","fields":["artifact_id","title","type","stage","status","canonical_path","summary","source_refs","created_at","updated_at"]}

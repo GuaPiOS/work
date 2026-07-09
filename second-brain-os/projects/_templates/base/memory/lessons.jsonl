@@ -1,0 +1,1 @@
+{"_schema":"project_lesson","_version":"2.0","_description":"Append-only project lessons.","fields":["timestamp","lesson","trigger","impact","prevention","scope","status"]}

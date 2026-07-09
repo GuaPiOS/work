@@ -1,0 +1,1 @@
+{"_schema":"project_procedure","_version":"2.0","_description":"Append-only project procedures and operating patterns.","fields":["timestamp","procedure","trigger","steps","artifact_target","stop_condition","scope","status"]}

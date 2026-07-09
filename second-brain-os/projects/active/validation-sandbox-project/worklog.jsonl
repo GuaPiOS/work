@@ -1,0 +1,2 @@
+{"_schema":"project_worklog","_version":"2.0","_description":"Append-only project work log.","fields":["timestamp","actor","action","summary","artifact_refs","next_step"]}
+{"timestamp": "2026-03-15T23:17:21+08:00", "actor": "guapi", "action": "close_session", "summary": "Verified upgraded routing, summaries, artifacts, and memory files exist.", "artifact_refs": ["art_validation_001"], "next_step": "Create the first canonical artifact."}

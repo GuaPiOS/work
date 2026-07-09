@@ -1,0 +1,29 @@
+node_modules/
+.DS_Store
+
+# Logs and local environment
+*.log
+.env
+.env.*
+!.env.example
+
+# Node
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Swift Package Manager / Xcode
+apps/wordydesk/.build/
+apps/wordydesk/.codex-home/
+apps/wordydesk/dist/
+apps/wordydesk/.swiftpm/
+DerivedData/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local editor state
+.vscode/
+.idea/

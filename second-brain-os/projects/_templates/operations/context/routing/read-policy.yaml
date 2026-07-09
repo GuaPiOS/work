@@ -1,0 +1,21 @@
+category: operations
+mandatory_read:
+  - project.yaml
+  - session-brief.md
+  - context/routing/current-readset.md
+  - context/summaries/compact-state.md
+  - next-actions.md
+  - memory/procedures.jsonl
+optional_read:
+  - workflow.md
+  - context/summaries/working-summary.md
+  - memory/facts.jsonl
+  - artifacts/current/
+forbidden_direct_read:
+  - context/tool_outputs/
+  - context/inputs/
+  - artifacts/archive/
+long_file_threshold_lines: 160
+long_file_threshold_kb: 8
+max_default_startup_files: 6
+default_long_file_strategy: summary_first_then_targeted_excerpt
