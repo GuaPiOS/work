@@ -1,1 +1,0 @@
-{"_schema":"brain_fact","_version":"2.0","_description":"Append-only global facts that remain useful across projects.","fields":["timestamp","fact","source","confidence","scope","status","last_verified"]}

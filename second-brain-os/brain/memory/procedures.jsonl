@@ -1,1 +1,0 @@
-{"_schema":"brain_procedure","_version":"2.0","_description":"Append-only global reusable procedures, playbooks, and operating patterns.","fields":["timestamp","procedure","trigger","steps","artifact_target","stop_condition","scope","status"]}
