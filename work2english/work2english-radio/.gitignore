@@ -1,0 +1,31 @@
+.venv/
+__pycache__/
+*.pyc
+output/
+logs/
+runtime/*
+!runtime/.gitkeep
+inbox/events/*
+!inbox/events/.gitkeep
+inbox/failed/*
+!inbox/failed/.gitkeep
+inbox/daily/*
+!inbox/daily/.gitkeep
+.DS_Store
+
+# secrets — 真实配置含 API key，只提交 config.example.yaml 模板
+config.yaml
+
+# frontend build artifacts & caches
+ui/dist/
+ui/node_modules/
+ui/.vite/
+*.tsbuildinfo
+ui/vite.config.js
+ui/vite.config.d.ts
+ui/vite.config.js.timestamp-*
+
+# python test caches
+.pytest_cache/
+.coverage
+htmlcov/

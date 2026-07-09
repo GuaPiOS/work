@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Work2English Study - $day</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f7f4;
+      --ink: #202124;
+      --muted: #687076;
+      --line: #d9ddd6;
+      --accent: #1f6f5b;
+      --panel: #ffffff;
+    }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+    header {
+      padding: 24px 28px 16px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+    h1 { margin: 0 0 12px; font-size: 22px; letter-spacing: 0; }
+    .summary {
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) auto;
+      gap: 16px;
+      align-items: center;
+    }
+    .briefing {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+      max-width: 980px;
+    }
+    main { padding: 18px 28px 36px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+      border: 1px solid var(--line);
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 12px;
+      vertical-align: top;
+      text-align: left;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+    th {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      text-transform: uppercase;
+      background: #fbfbf9;
+    }
+    .idx { width: 44px; color: var(--muted); text-align: right; }
+    .meta { width: 90px; color: var(--muted); }
+    .meta small { display: block; margin-top: 4px; }
+    .zh, .en { width: 28%; }
+    .en { font-size: 15px; color: #152f2a; }
+    .audio { width: 230px; }
+    audio { width: 210px; max-width: 100%; }
+    .note { width: 18%; }
+    .note strong { color: var(--accent); font-weight: 650; }
+    .note p { margin: 6px 0 0; color: var(--muted); }
+    @media (max-width: 900px) {
+      header, main { padding-left: 14px; padding-right: 14px; }
+      .summary { grid-template-columns: 1fr; }
+      table, thead, tbody, tr, th, td { display: block; }
+      thead { display: none; }
+      tr { border-bottom: 1px solid var(--line); }
+      td { border-bottom: 0; width: auto !important; }
+      .idx { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Work2English Study - $day</h1>
+    <div class="summary">
+      <p class="briefing">$briefing</p>
+      <audio controls preload="none" src="radio.mp3"></audio>
+    </div>
+  </header>
+  <main>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Time</th>
+          <th>原文</th>
+          <th>Spoken English</th>
+          <th>MP3</th>
+          <th>学习点</th>
+        </tr>
+      </thead>
+      <tbody>
+        $rows
+      </tbody>
+    </table>
+  </main>
+</body>
+</html>

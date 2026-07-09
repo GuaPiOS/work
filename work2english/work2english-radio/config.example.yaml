@@ -1,0 +1,73 @@
+# ─── Work2English Radio 配置模板 ───────────────────────────────────────────────
+# 复制本文件为 config.yaml 并填入你自己的值。config.yaml 已被 .gitignore 排除，
+# 不会被提交。敏感字段（如 fish_audio.api_key）建议留空，改用环境变量注入。
+#
+#   export FISH_AUDIO_API_KEY="你的 key"
+
+input_file: "inbox/feishu_raw.md"
+output_text: "output/today_en.md"
+output_audio: "output/today_audio.mp3"
+input_hash_file: "runtime/last_input_hash.txt"
+log_file: "logs/run.log"
+
+level: "A2"
+
+server:
+  bind: "loopback"   # loopback (仅本机，默认) | lan (暴露到局域网，未来 app/远程客户端用)
+
+collector:
+  enabled: true
+  daily_rollup: true
+  max_input_chars: 5000
+  max_daily_chars: 20000
+  ignore_events_older_than_start_seconds: 120
+  duplicate_text_window_seconds: 600
+  supported_doc_patterns:
+    - "/docx/"
+    - "/doc/"
+    - "/wiki/"
+
+feishu:
+  event_type: "im.message.receive_v1"
+  doc_fetch_command: "lark-cli docs +fetch --doc {url} --doc-format markdown"
+
+llm:
+  provider: "ollama"
+  model: "qwen3:8b"
+  endpoint: "http://localhost:11434/api/generate"
+  temperature: 0.15
+  num_predict: 1200
+  timeout_seconds: 180
+
+tts:
+  provider: "fish-audio"        # edge-tts | fish-audio
+  voice: "933563129e564b19a115bedd57b7406a"
+  rate: "+0%"
+  pitch: "+0Hz"
+
+fish_audio:
+  # 留空 → 走环境变量 FISH_AUDIO_API_KEY（推荐，不要把真实 key 写进 config.yaml）
+  api_key: ""
+  endpoint: "https://api.fish.audio/v1/tts"
+  model: "s2.1-pro-free"   # 免费 S2.1 Pro 引擎（通过 model 请求头选择）
+  voices:
+    - id: "933563129e564b19a115bedd57b7406a"
+      name: "Sarah · EN"
+    - id: "802e3bc2b27e49c2995d23ef70e6ac89"
+      name: "Energetic Male · EN"
+  # 可选：prosody 控制（不填用默认）
+  # speed: 1.0
+  # pitch: 0
+
+player:
+  enabled: true
+  mode: "auto"            # auto | daily （single/list 由 auto 智能覆盖，保留兼容）
+  loop: true
+  interval_seconds: 5
+  local_fallback: true    # 无浏览器客户端在线时，是否用本地 afplay 兜底播放
+  pid_file: "runtime/player.pid"
+
+# 可选：运行时产物保留期（天数）。不填或 0 = 不清理。开启后会按文件 mtime
+# 清理 inbox/events、inbox/failed、output/study 下超过保留期的旧文件/目录。
+# retention:
+#   days: 30
