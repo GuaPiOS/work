@@ -17,7 +17,7 @@ def strip_thinking(text: str) -> str:
     return re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL | re.IGNORECASE).strip()
 
 
-def call_ollama(prompt: str, config: dict) -> str:
+def call_ollama(prompt: str, config: dict, *, json_mode: bool = False) -> str:
     llm = config["llm"]
     endpoint = llm["endpoint"]
     model = llm["model"]
@@ -26,15 +26,20 @@ def call_ollama(prompt: str, config: dict) -> str:
         "num_predict": int(llm.get("num_predict", 1600)),
     }
     try:
+        request_body = {
+            "model": model,
+            "prompt": prompt,
+            "stream": False,
+            "think": False,
+            "options": options,
+        }
+        if json_mode:
+            # Constrain decoding instead of relying on a small local model to
+            # reproduce every quote and colon perfectly.
+            request_body["format"] = "json"
         response = requests.post(
             endpoint,
-            json={
-                "model": model,
-                "prompt": prompt,
-                "stream": False,
-                "think": False,
-                "options": options,
-            },
+            json=request_body,
             timeout=int(config.get("llm", {}).get("timeout_seconds", 180)),
         )
         response.raise_for_status()
@@ -58,37 +63,45 @@ You are a precise workplace English learning assistant.
 
 Convert Chinese workplace notes into natural spoken English for listening practice.
 
-Return only valid compact JSON. Do not use Markdown. Do not explain your work.
-
-JSON schema:
-{{
-  "items": [
-    {{
-      "id": 1,
-      "spoken_english": "Natural spoken English for this item.",
-      "focus_phrase": "One useful English phrase from the spoken English.",
-      "note_zh": "A short Chinese learning note."
-    }}
-  ]
-}}
+Return exactly one line per input item. Do not use JSON or Markdown.
+Each line must use this format:
+ID|||spoken English|||useful English phrase|||short Chinese learning note
 
 Rules:
 1. Keep business meaning accurate. Do not add facts.
 2. Use {level} level English.
 3. Use natural spoken workplace English, not stiff written translation.
 4. Prefer short sentences, contractions where natural, and clear transitions.
-5. The items array must have exactly {len(items)} items and keep the same id/order as the input.
+5. Return exactly {len(items)} lines and keep the same id/order as the input.
 6. Each spoken_english item should be easy to compare with the original Chinese.
 7. Keep each spoken_english under 45 words unless the source item needs more detail.
 8. Do not output Chinese inside spoken_english.
 9. note_zh must be concise.
 10. Do not mention metadata such as p2p, channel, message ID, item count, or source type.
 11. Avoid filler such as "let's take a closer look" unless the original text says that.
-12. Do not include daily_briefing. The app will compose the radio script locally.
+12. Never use ||| inside a field.
 
-Input items:
+Input items ({len(items)} items):
 {payload}
 """
+
+
+def extract_study_rows(text: str, expected_count: int) -> dict:
+    rows = []
+    for raw_line in strip_thinking(text).splitlines():
+        parts = [part.strip() for part in raw_line.strip().split("|||")]
+        if len(parts) != 4 or not parts[0].isdigit():
+            continue
+        rows.append({
+            "id": int(parts[0]),
+            "spoken_english": parts[1],
+            "focus_phrase": parts[2],
+            "note_zh": parts[3],
+        })
+    rows.sort(key=lambda row: row["id"])
+    if len(rows) != expected_count:
+        raise ValueError(f"Expected {expected_count} study rows, received {len(rows)}")
+    return {"items": rows}
 
 
 def prepare_text_for_model(text: str, max_chars: int = 900) -> str:

@@ -11,6 +11,10 @@ inbox/failed/*
 !inbox/failed/.gitkeep
 inbox/daily/*
 !inbox/daily/.gitkeep
+inbox/digest/*
+!inbox/digest/.gitkeep
+inbox/sources/*
+!inbox/sources/.gitkeep
 .DS_Store
 
 # secrets — 真实配置含 API key，只提交 config.example.yaml 模板

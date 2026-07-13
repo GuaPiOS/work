@@ -259,6 +259,50 @@ tail -n 40 logs/player.out.log
 
 飞书机器人投喂会按天累积到 `inbox/feishu_raw.md`。`run.py --watch` 每次检测到当天内容变化后，会重新生成当天合集音频，并循环播放整天内容。跨天后，采集器会自动开始新的当天合集，同时把每日内容同步保存到 `inbox/daily/YYYY-MM-DD.md`。
 
+#### 当天飞书信息自动汇总
+
+除了主动发给机器人，也可以一次性读取当前用户当天可见的飞书消息、日历，以及当天新建或到期的任务。
+
+这条入口和机器人直发是解耦的：系统会先把原始数据归档到 `inbox/sources/feishu-YYYY-MM-DD.json`，再生成一份中文学习摘要 `inbox/digest/YYYY-MM-DD.md`。只有当生成策略允许时，才把 digest 投喂到现有的英语转换、学习表和朗读流程。
+
+系统会优先选择私聊、@你、你的发言及其上下文，并在多个聊天之间均衡选取。A2 → B1 默认每天只保留 3 个高价值学习点：
+
+```bash
+python daily_collect.py
+```
+
+只采集并查看摘要、不生成英语和音频：
+
+```bash
+python daily_collect.py --collect-only
+```
+
+立即生成，忽略电脑空闲策略：
+
+```bash
+python daily_collect.py --force-generate
+```
+
+补采指定日期：
+
+```bash
+python daily_collect.py --date 2026-07-13
+```
+
+这一功能使用飞书用户身份（`--as user`），因为机器人身份无法读取个人可见的聊天、日历和任务。首次使用时需要最小只读权限：
+
+```bash
+lark-cli auth login --scope "search:message calendar:calendar.event:read task:task:read"
+```
+
+消息搜索会自动读取全部分页结果，但不会把所有群消息都交给本地模型。内容筛选由本地代码完成，因此只需要一次模型调用来生成 A2 → B1 英语，响应更稳定，也避免活跃大群淹没真正与你相关的信息。重复运行当天汇总会替换旧的 daily digest section，但保留你主动发给机器人的内容；原始机器人事件仍保存在 `inbox/events/`。当前版本不会自动读取消息中的附件正文、妙记全文或浏览过但没有聊天记录的文档。
+
+默认配置下，`daily_collect.py` 会先完成收集和 digest 写入，然后检查 `daily_digest.generation_policy`：
+
+- `idle`：电脑空闲达到 `daily_digest.min_idle_seconds` 后才生成英语和音频。
+- `always`：收集后立即生成。
+- `never`：只写 digest，不自动生成。
+
 每次生成后，系统也会创建学习对照表：`output/study/YYYY-MM-DD/index.html`。表格里包含原文、自然英文、学习点和逐条 MP3，可点击播放对照学习。
 
 飞书事件流可能在重连后补发旧消息，或者给同一内容生成新的 `message_id`。收集器会在回执前先做过滤：启动前超过 `collector.ignore_events_older_than_start_seconds` 的历史事件会被忽略；同一聊天、同一发送者、同一文本在 `collector.duplicate_text_window_seconds` 内只处理一次。去重状态保存在 `runtime/event_dedupe_state.json`。

@@ -46,4 +46,18 @@ def test_build_study_prompt_includes_level_and_count():
     assert "B2" in prompt
     assert "2 items" in prompt
     assert "你好" in prompt
-    assert '"id": 1' in prompt or '"id":1' in prompt
+    assert "exactly 2 lines" in prompt
+    assert "|||" in prompt
+
+
+def test_extract_study_rows_parses_simple_protocol():
+    raw = "1|||Hello there.|||hello there|||自然问候。\n2|||See you.|||see you|||告别表达。"
+    payload = llm.extract_study_rows(raw, 2)
+    assert payload["items"][0]["spoken_english"] == "Hello there."
+    assert payload["items"][1]["focus_phrase"] == "see you"
+
+
+def test_extract_study_rows_rejects_missing_rows():
+    import pytest
+    with pytest.raises(ValueError):
+        llm.extract_study_rows("1|||Hello.|||hello|||问候。", 2)

@@ -70,6 +70,13 @@ def bust_audio_cache(config: dict) -> None:
             out_audio.unlink()
         except OSError:
             pass
+    # Voice change invalidates per-item clips too. Option B's reuse check keys on
+    # source text + file existence, so removing the clip dirs forces a full
+    # re-synth with the new voice on the next generation.
+    import shutil as _shutil
+    for audio_dir in STUDY_DIR.glob("*/audio"):
+        if audio_dir.is_dir():
+            _shutil.rmtree(audio_dir, ignore_errors=True)
 
 
 # ─── state assembly ───────────────────────────────────────────────────────────

@@ -55,6 +55,7 @@ def ensure_dirs() -> None:
     for d in (
         RUNTIME_DIR, LOGS_DIR, INBOX_DIR,
         INBOX_DIR / "events", INBOX_DIR / "failed", INBOX_DIR / "daily",
+        INBOX_DIR / "digest", INBOX_DIR / "sources",
         OUTPUT_DIR, OUTPUT_DIR / "study", PROMPTS_DIR,
     ):
         d.mkdir(parents=True, exist_ok=True)

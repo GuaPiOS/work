@@ -318,7 +318,7 @@ def append_daily_inbox(text: str, config: dict, event: dict) -> None:
     input_file = PROJECT_ROOT / config["input_file"]
     input_file.parent.mkdir(parents=True, exist_ok=True)
     now = datetime.now()
-    today = now.strftime("%Y-%m-%d")
+    today = event.get("collected_date") or now.strftime("%Y-%m-%d")
     current = input_file.read_text(encoding="utf-8") if input_file.exists() else ""
     if current_day_from_content(current) != today:
         current = daily_header(today)
@@ -340,6 +340,23 @@ def append_daily_inbox(text: str, config: dict, event: dict) -> None:
         )
     write_text(str(input_file), next_content)
     write_text(str(DAILY_DIR / f"{today}.md"), next_content)
+
+
+def remove_daily_summary_sections(config: dict, day: str) -> None:
+    """Make an on-demand digest idempotent while preserving bot-fed items."""
+    input_file = PROJECT_ROOT / config["input_file"]
+    if not input_file.exists():
+        return
+    content = input_file.read_text(encoding="utf-8")
+    if current_day_from_content(content) != day:
+        return
+    cleaned = re.sub(
+        r"(?ms)^##\s+[^\n]+ - daily (?:feishu_summary|digest)\n.*?(?=^##\s+|\Z)",
+        "",
+        content,
+    ).rstrip() + "\n"
+    write_text(str(input_file), cleaned)
+    write_text(str(DAILY_DIR / f"{day}.md"), cleaned)
 
 
 def write_inbox(text: str, config: dict, event: dict) -> None:

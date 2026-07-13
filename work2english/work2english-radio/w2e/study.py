@@ -147,10 +147,13 @@ def build_study_payload(input_text: str, config: dict) -> dict:
     source_items = parse_daily_items(input_text)
     if not source_items:
         raise RuntimeError("No input items found.")
-    prompt = llm.build_study_prompt(config["level"], source_items)
+    level = str(config.get("level", "A2")).strip() or "A2"
+    target_level = str(config.get("daily_digest", {}).get("target_level", "")).strip()
+    level_range = f"{level} to {target_level}" if target_level else level
+    prompt = llm.build_study_prompt(level_range, source_items)
     try:
         raw = llm.call_ollama(prompt, config)
-        return normalize_study_payload(llm.extract_json_object(raw), source_items)
+        return normalize_study_payload(llm.extract_study_rows(raw, len(source_items)), source_items)
     except Exception:
         logging.exception("Structured study generation failed; using fallback payload.")
         return build_fallback_study_payload(source_items)
@@ -190,13 +193,35 @@ def write_study_json(day: str, payload: dict) -> None:
     write_json(out / "study.json", payload)
 
 
-def generate_item_audio(day: str, payload: dict, config: dict) -> None:
+def generate_item_audio(day: str, payload: dict, config: dict, prev_payload: dict | None = None) -> None:
+    """Synthesize per-item MP3s. Option B: an item whose Chinese source is
+    unchanged from `prev_payload` AND whose clip already exists is reused
+    as-is — we do NOT overwrite that file. This keeps a clip the browser is
+    currently playing intact when new (appended) content arrives; only genuinely
+    new or changed items get synthesized. The reused item also keeps its previous
+    English/note so the displayed text matches the untouched audio."""
     audio_dir = study_output_dir(day) / "audio"
     audio_dir.mkdir(parents=True, exist_ok=True)
+    prev_items = (prev_payload or {}).get("items", []) if isinstance(prev_payload, dict) else []
     for index, item in enumerate(payload["items"], start=1):
         rel = f"audio/item_{index:03d}.mp3"
+        audio_path = audio_dir / f"item_{index:03d}.mp3"
+        prev = prev_items[index - 1] if index - 1 < len(prev_items) else None
+        if (
+            prev
+            and prev.get("original_zh") == item.get("original_zh")
+            and "Please check the study table" not in prev.get("spoken_english", "")
+            and audio_path.exists()
+        ):
+            # Source unchanged + clip present → reuse. Keep prev's English/note
+            # so what's shown matches the audio we are NOT overwriting.
+            item["spoken_english"] = prev.get("spoken_english", item.get("spoken_english", ""))
+            item["focus_phrase"] = prev.get("focus_phrase", item.get("focus_phrase", ""))
+            item["note_zh"] = prev.get("note_zh", item.get("note_zh", ""))
+            item["audio"] = rel
+            continue
+        tts.synthesize(item["spoken_english"], config, str(audio_path))
         item["audio"] = rel
-        tts.synthesize(item["spoken_english"], config, str(audio_dir / f"item_{index:03d}.mp3"))
 
 
 def _render_rows(payload: dict) -> str:
@@ -238,9 +263,15 @@ def render_study_html(day: str, payload: dict) -> None:
 
 def write_study_artifacts(day: str, payload: dict, config: dict) -> None:
     """Write study.json, per-item audio, the full radio mp3 copy, and the HTML
-    table. Does NOT touch player_control.json — the playback layer decides that."""
+    table. Does NOT touch player_control.json — the playback layer decides that.
+
+    Reads the previous study.json first so per-item audio can reuse unchanged
+    clips (Option B) instead of overwriting files a client may be playing.
+    generate_item_audio may revert reused items' English to match existing audio,
+    so it runs BEFORE we persist study.json."""
+    prev_payload = read_json(study_output_dir(day) / "study.json")
+    generate_item_audio(day, payload, config, prev_payload=prev_payload)
     write_study_json(day, payload)
-    generate_item_audio(day, payload, config)
     full_audio = Path(config["output_audio"])
     if full_audio.exists():
         shutil.copyfile(full_audio, study_output_dir(day) / "radio.mp3")

@@ -20,7 +20,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from . import study, tts, playback, feishu, ollama
+from . import study, tts, playback, feishu, ollama, notify
 from .io_utils import read_text, write_text, get_hash
 from .runtime import PROJECT_ROOT, RUNTIME_DIR
 
@@ -158,6 +158,8 @@ class GenerationCoordinator:
             with generation_lock():
                 generated, status = generate_once(config, ensure_playback=True)
             self.state["last_result"] = "generated" if generated else "unchanged"
+            if generated:
+                notify.notify("Work2English", "新内容已就绪，打开界面收听")
             return {"ok": True, "generated": generated, "status": status}
         except Exception as exc:
             logging.exception("Generation failed.")
