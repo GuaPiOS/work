@@ -1,4 +1,4 @@
-import type { ServerState } from "../types";
+import type { DailyPreviewResponse, ServerState } from "../types";
 
 // Thin fetch helpers around the backend (server.py). All same-origin when the
 // UI is served by server.py at :8000. In Vite dev mode, vite.config.ts proxies
@@ -29,6 +29,39 @@ export async function postTtsSettings(provider: string, voice: string): Promise<
   });
   if (!res.ok) throw new Error(`tts-settings ${res.status}`);
   const data = (await res.json()) as { ok: boolean };
+  return data.ok;
+}
+
+export async function requestDailyPreview(options: { date?: string; selectedTexts?: string[] } = {}): Promise<DailyPreviewResponse> {
+  const res = await fetch("/api/daily-preview", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      ...(options.date ? { date: options.date } : {}),
+      ...(options.selectedTexts ? { selected_texts: options.selectedTexts } : {}),
+    }),
+  });
+  const data = (await res.json()) as DailyPreviewResponse;
+  if (!res.ok || !data.ok) throw new Error(data.error || `daily-preview ${res.status}`);
+  return data;
+}
+
+export async function requestDailyCandidates(date?: string): Promise<DailyPreviewResponse> {
+  const res = await fetch("/api/daily-candidates", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(date ? { date } : {}),
+  });
+  const data = (await res.json()) as DailyPreviewResponse;
+  if (!res.ok || !data.ok) throw new Error(data.error || `daily-candidates ${res.status}`);
+  return data;
+}
+
+export async function requestDailyGenerate(): Promise<boolean> {
+  const res = await fetch("/api/daily-generate", { method: "POST" });
+  if (res.status === 409) return false;
+  const data = (await res.json()) as { ok: boolean; error?: string };
+  if (!res.ok || !data.ok) throw new Error(data.error || `daily-generate ${res.status}`);
   return data.ok;
 }
 

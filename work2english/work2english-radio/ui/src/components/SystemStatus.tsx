@@ -1,9 +1,9 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useVoiceOS } from "../store/useVoiceOS";
-import type { ServiceState } from "../types";
+import type { ConnectionStatus, ServiceState } from "../types";
 
 /**
- * SystemStatus — top telemetry bar.
+ * SystemStatus — calm, user-facing status summary.
  *
  * Each service is a labelled channel with a colour-coded signal dot. When a
  * service isn't healthy, its diagnostic reason shows as a small caption so the
@@ -13,10 +13,10 @@ import type { ServiceState } from "../types";
 type ServiceKey = "feishu" | "llm" | "tts" | "player";
 
 const SERVICES: { key: ServiceKey; label: string }[] = [
-  { key: "feishu", label: "Feishu" },
-  { key: "llm", label: "LLM" },
-  { key: "tts", label: "TTS" },
-  { key: "player", label: "Player" },
+  { key: "feishu", label: "飞书" },
+  { key: "llm", label: "英文生成" },
+  { key: "tts", label: "音频" },
+  { key: "player", label: "播放器" },
 ];
 
 const STATE_COLOR: Record<ServiceState, string> = {
@@ -27,10 +27,10 @@ const STATE_COLOR: Record<ServiceState, string> = {
 };
 
 const STATE_LABEL: Record<ServiceState, string> = {
-  connected: "Connected",
-  processing: "Working",
-  idle: "Standby",
-  error: "Error",
+  connected: "正常",
+  processing: "处理中",
+  idle: "待机",
+  error: "需要处理",
 };
 
 function ServiceDot({
@@ -92,9 +92,10 @@ function ServiceDot({
 export default function SystemStatus() {
   const connection = useVoiceOS((s) => s.connectionStatus);
   const diagnostics = useVoiceOS((s) => s.diagnostics);
+  const overall = overallStatus(connection);
 
   return (
-    <header className="glass rounded-os flex items-center justify-between gap-6 px-7 py-4">
+    <header className="glass flex flex-wrap items-center justify-between gap-4 rounded-2xl px-5 py-3.5 md:px-6">
       <div className="flex shrink-0 items-center gap-3">
         <div
           className="grid h-8 w-8 place-items-center rounded-xl"
@@ -108,22 +109,41 @@ export default function SystemStatus() {
         </div>
         <div className="flex flex-col leading-none">
           <span className="font-display text-[15px] font-semibold tracking-tight text-mist">
-            Work2English <span className="text-haze font-light">OS</span>
+            Work2English
           </span>
-          <span className="telemetry mt-1">Personal study companion · v0.2</span>
+          <span className="mt-1 text-xs text-haze">你的工作英语学习助手</span>
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-6 md:gap-8">
-        {SERVICES.map((s) => (
-          <ServiceDot
-            key={s.key}
-            label={s.label}
-            state={connection[s.key]}
-            reason={diagnostics[s.key] ?? ""}
-          />
-        ))}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 rounded-xl bg-white/[0.04] px-3 py-2">
+          <span className={`h-2 w-2 rounded-full ${overall === "需要处理" ? "bg-status-err" : overall === "处理中" ? "bg-status-warn" : overall === "正常" ? "bg-status-ok" : "bg-haze"}`} />
+          <span className="text-sm text-mist">系统{overall}</span>
+        </div>
+        <details className="relative">
+          <summary className="cursor-pointer list-none rounded-xl px-2 py-2 text-xs text-haze hover:bg-white/[0.05] hover:text-mist">
+            查看状态
+          </summary>
+          <div className="absolute right-0 top-11 z-30 grid min-w-[210px] gap-3 rounded-xl border border-white/10 bg-abyss/95 p-4 shadow-2xl backdrop-blur-xl">
+            {SERVICES.map((s) => (
+              <ServiceDot
+                key={s.key}
+                label={s.label}
+                state={connection[s.key]}
+                reason={diagnostics[s.key] ?? ""}
+              />
+            ))}
+          </div>
+        </details>
       </div>
     </header>
   );
+}
+
+function overallStatus(connection: ConnectionStatus): string {
+  const states = Object.values(connection);
+  if (states.includes("error")) return "需要处理";
+  if (states.includes("processing")) return "处理中";
+  if (states.includes("connected")) return "正常";
+  return "待机";
 }

@@ -1,19 +1,6 @@
 from datetime import date
-import json
 
-from w2e import daily_digest, feishu
-
-
-def test_day_bounds_uses_full_requested_day():
-    start, end = daily_digest.day_bounds(date(2026, 7, 13))
-    assert start.startswith("2026-07-13T00:00:00")
-    assert end.startswith("2026-07-13T23:59:59")
-    assert start[-6] in ("+", "-")
-
-
-def test_find_list_supports_nested_envelope():
-    payload = {"data": {"items": [{"id": "one"}]}}
-    assert daily_digest._find_list(payload, ("items",))[0]["id"] == "one"
+from w2e import daily_digest, feishu, study
 
 
 def test_compact_sources_extracts_message_text():
@@ -28,11 +15,6 @@ def test_compact_sources_extracts_message_text():
     compact = daily_digest.compact_sources(sources)
     assert "进度正常" in compact
     assert "项目群" in compact
-
-
-def test_dedupe_tasks_by_id():
-    tasks = [{"task_id": "a", "x": 1}, {"task_id": "a", "x": 2}, {"task_id": "b"}]
-    assert len(daily_digest._dedupe(tasks, ("task_id",))) == 2
 
 
 def test_select_relevant_messages_keeps_group_context_and_p2p():
@@ -76,20 +58,66 @@ def test_build_digest_items_uses_calendar_when_space_available():
     assert items == ["今天的日程包括：产品周会。"]
 
 
-def test_write_source_archive_and_digest_document(tmp_path, monkeypatch):
-    monkeypatch.setattr(daily_digest, "SOURCE_ARCHIVE_DIR", tmp_path / "sources")
+def test_build_digest_items_skips_system_notices():
+    messages = [
+        {"chat_id": "a", "chat_type": "p2p", "msg_type": "text", "create_time": "3",
+         "sender": {"id": "other"}, "content": "您的运费询价PI260615059于2026-07-15到期，请及时前往Odoo处理。"},
+        {"chat_id": "b", "chat_type": "p2p", "msg_type": "text", "create_time": "4",
+         "sender": {"id": "other"}, "content": "锁机问题需要明天尽快验证，避免我们误判状态。"},
+    ]
+    items = daily_digest.build_digest_items(
+        {"messages": messages, "calendar": [], "tasks": []}, "me", limit=3,
+    )
+    assert items == ["锁机问题需要明天尽快验证，避免我们误判状态。"]
+
+
+def test_build_digest_items_removes_obvious_mentions():
+    messages = [
+        {"chat_id": "a", "chat_type": "p2p", "msg_type": "text", "create_time": "3",
+         "sender": {"id": "other"}, "content": "@Easnow.Cai @Xiaokai.Liu 北美第一波实勘反馈来了"},
+    ]
+    items = daily_digest.build_digest_items(
+        {"messages": messages, "calendar": [], "tasks": []}, "me", limit=3,
+    )
+    assert items == ["北美第一波实勘反馈来了"]
+
+
+def test_write_digest_document_renders_level_and_items(tmp_path, monkeypatch):
     monkeypatch.setattr(daily_digest, "DIGEST_DIR", tmp_path / "digest")
     sources = {"messages": [{"id": "m1"}], "calendar": [], "tasks": []}
-    archive = daily_digest.write_source_archive(date(2026, 7, 13), sources)
     digest = daily_digest.write_digest_document(
         date(2026, 7, 13), ["今天讨论了发版计划。"], sources,
         {"level": "A2", "daily_digest": {"target_level": "B1"}},
     )
-    assert json.loads(archive.read_text(encoding="utf-8"))["messages"][0]["id"] == "m1"
     text = digest.read_text(encoding="utf-8")
     assert "A2->B1" in text
     assert "今天讨论了发版计划。" in text
     assert "not a full work report" in text
+
+
+def test_write_digest_document_renders_source_issues(tmp_path, monkeypatch):
+    monkeypatch.setattr(daily_digest, "DIGEST_DIR", tmp_path / "digest")
+    sources = {
+        "messages": [],
+        "calendar": [{"summary": "产品周会"}],
+        "tasks": [],
+        "_issues": [{"source": "messages", "error": "permission denied"}],
+    }
+    digest = daily_digest.write_digest_document(
+        date(2026, 7, 13), ["今天的日程包括：产品周会。"], sources,
+        {"level": "A2", "daily_digest": {"target_level": "B1"}},
+    )
+    text = digest.read_text(encoding="utf-8")
+    assert "## Source Issues" in text
+    assert "messages: permission denied" in text
+
+
+def test_render_digest_inbox_can_be_parsed_for_preview():
+    inbox = daily_digest.render_digest_inbox(date(2026, 7, 13), ["今天讨论了发版计划。"])
+    items = study.parse_daily_items(inbox)
+    assert len(items) == 1
+    assert items[0]["source"] == "daily digest"
+    assert items[0]["original_zh"] == "今天讨论了发版计划。"
 
 
 def test_write_digest_to_inbox_replaces_old_digest_and_preserves_manual(tmp_path, monkeypatch):

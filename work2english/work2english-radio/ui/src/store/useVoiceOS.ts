@@ -7,6 +7,7 @@ import type {
   ServiceState,
   TtsOptions,
   VoiceStatus,
+  DailyPreviewResponse,
 } from "../types";
 import { awaitGeneration, fetchState, postTtsSettings, requestGenerate } from "../data/api";
 import { latestBatchStart, splitSentences } from "../lib";
@@ -46,8 +47,10 @@ interface VoiceOSStore {
   generating: boolean;
   backendError: string | null;
   ready: boolean;
+  dailyPreview: DailyPreviewResponse | null;
 
   init: () => () => void;
+  refresh: () => Promise<void>;
   registerAudio: (el: HTMLAudioElement | null) => void;
   togglePlay: () => Promise<void>;
   pause: () => void;
@@ -145,6 +148,7 @@ export const useVoiceOS = create<VoiceOSStore>((set, get) => {
           generating: s.generating, backendError: s.last_error,
           connectionStatus: s.connectionStatus, diagnostics: s.diagnostics ?? EMPTY_DIAG,
           tts: s.tts ?? get().tts, ready: true,
+          dailyPreview: s.daily_preview?.ok ? s.daily_preview : get().dailyPreview,
           ambientThought: "New content added — plays in list order after the current item.",
         });
         return;
@@ -157,6 +161,7 @@ export const useVoiceOS = create<VoiceOSStore>((set, get) => {
         generating: s.generating, backendError: s.last_error,
         connectionStatus: s.connectionStatus, diagnostics: s.diagnostics ?? EMPTY_DIAG,
         tts: s.tts ?? get().tts, ready: true,
+        dailyPreview: s.daily_preview?.ok ? s.daily_preview : get().dailyPreview,
         ambientThought: "New content ready — press Play.",
       });
       return;
@@ -169,6 +174,7 @@ export const useVoiceOS = create<VoiceOSStore>((set, get) => {
       generating: s.generating, backendError: s.last_error,
       connectionStatus: s.connectionStatus, diagnostics: s.diagnostics ?? EMPTY_DIAG,
       tts: s.tts ?? get().tts, ready: true,
+      dailyPreview: s.daily_preview?.ok ? s.daily_preview : get().dailyPreview,
       ambientThought: ambientFor(get().status, s),
     });
   };
@@ -187,13 +193,13 @@ export const useVoiceOS = create<VoiceOSStore>((set, get) => {
     progress: 0, currentSentence: "—", remaining: 0, total: 0,
     ambientThought: "Connecting to your work feed…",
     stale: false, generating: false, backendError: null, ready: false,
+    dailyPreview: null,
 
     init: () => {
       let cancelled = false;
       const load = async () => {
         try {
-          const s = await fetchState();
-          if (!cancelled) hydrate(s);
+          await get().refresh();
         } catch {
           if (!cancelled) {
             set({
@@ -208,6 +214,11 @@ export const useVoiceOS = create<VoiceOSStore>((set, get) => {
       load();
       const interval = setInterval(load, POLL_MS);
       return () => { cancelled = true; clearInterval(interval); };
+    },
+
+    refresh: async () => {
+      const s = await fetchState();
+      hydrate(s);
     },
 
     registerAudio: (el) => {

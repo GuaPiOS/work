@@ -32,11 +32,18 @@ collector:
 daily_digest:
   # A2 默认每天 3 个重点，兼顾本地模型稳定性与可记忆性。
   max_learning_items: 3
+  # UI 候选池展示数量；先筛出候选，再由用户勾选 1-3 条生成英文预览。
+  candidate_limit: 30
   # 当前 A2，目标 B1；prompt 会按 level + target_level 控制难度边界。
   target_level: "B1"
   # always | idle | never。idle 会先写 digest，等电脑空闲再生成英语和音频。
   generation_policy: "idle"
   min_idle_seconds: 300
+  # UI/server 常驻时自动刷新中英预览；ISO weekday: 1=周一, 5=周五。
+  schedule:
+    enabled: true
+    weekdays: [1, 2, 3, 4, 5]
+    times: ["09:30", "12:30", "18:00"]
 
 feishu:
   event_type: "im.message.receive_v1"

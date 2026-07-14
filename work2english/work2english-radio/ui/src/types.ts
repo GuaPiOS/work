@@ -53,6 +53,40 @@ export interface ServerState {
   tts: TtsOptions;
   player_control: PlayerControl;
   diagnostics: { feishu: string; llm: string; tts: string; player: string };
+  daily_preview?: DailyPreviewResponse;
+}
+
+export interface SourceIssue {
+  source: string;
+  error: string;
+}
+
+export interface DailyCandidate {
+  id: string;
+  source: string;
+  time: string;
+  chat: string;
+  text: string;
+  score: number;
+  reasons: string[];
+  tags: string[];
+  recommended: boolean;
+}
+
+export interface DailyPreviewResponse {
+  ok: boolean;
+  day?: string;
+  updated_at?: string;
+  counts?: Record<string, number>;
+  issues?: SourceIssue[];
+  digest_path?: string;
+  archive_path?: string;
+  candidate_path?: string;
+  candidates?: DailyCandidate[];
+  source_items?: string[];
+  items?: ApiItem[];
+  preview_error?: string;
+  error?: string;
 }
 
 export interface TtsProvider {

@@ -33,7 +33,7 @@ export default function PlayerBar() {
   const playing = status === "reading";
 
   return (
-    <footer className="glass rounded-os px-5 py-4">
+    <footer className="glass sticky bottom-4 z-20 rounded-2xl px-4 py-3 md:px-5">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
         {/* transport */}
         <div className="flex items-center gap-2">
@@ -59,11 +59,11 @@ export default function PlayerBar() {
         {/* now playing + subtitle */}
         <div className="min-w-[220px] flex-1">
           <div className="telemetry mb-1">
-            {item ? `#${currentIndex + 1} · ${item.time || "manual"}` : "Nothing loaded"}
-            <span className="ml-2 text-haze/60">{mmss(remaining)} left</span>
+            {item ? `第 ${currentIndex + 1} 条 · ${item.time || "即时内容"}` : "还没有正在播放的内容"}
+            {item && <span className="ml-2 text-haze/60">剩余 {mmss(remaining)}</span>}
           </div>
           <p className={`text-[15px] leading-snug ${item ? "text-mist" : "text-haze"}`}>
-            {status === "reading" ? currentSentence : ambient}
+            {status === "reading" ? currentSentence : translateAmbient(ambient)}
           </p>
           {/* progress */}
           <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/8">
@@ -81,7 +81,7 @@ export default function PlayerBar() {
           <Volume volume={volume} onChange={setVolume} />
         </div>
       </div>
-      <div className="sr-only" aria-live="polite">{total ? `${mmss(total)} total` : ""}</div>
+      <div className="sr-only" aria-live="polite">{total ? `总时长 ${mmss(total)}` : ""}</div>
     </footer>
   );
 }
@@ -104,10 +104,23 @@ function IconBtn({
 function ModeToggle({ mode, onChange }: { mode: PlayerMode; onChange: (m: PlayerMode) => void }) {
   return (
     <div className="flex items-center gap-1 rounded-full bg-white/5 p-1" role="group" aria-label="Playback mode">
-      <ModeBtn active={mode === "daily"} onClick={() => onChange("daily")}>Today's set</ModeBtn>
-      <ModeBtn active={mode === "auto"} onClick={() => onChange("auto")}>Latest</ModeBtn>
+      <ModeBtn active={mode === "daily"} onClick={() => onChange("daily")}>今天</ModeBtn>
+      <ModeBtn active={mode === "auto"} onClick={() => onChange("auto")}>最新</ModeBtn>
     </div>
   );
+}
+
+function translateAmbient(text: string): string {
+  const translations: Record<string, string> = {
+    "Synthesizing spoken English…": "正在生成英文音频…",
+    "Reading your work briefing aloud.": "正在朗读你的工作内容。",
+    "Paused. Your place is held.": "已暂停，会从当前位置继续。",
+    "Preparing audio…": "正在准备音频…",
+    "No audio yet — send a Feishu message or press Play.": "还没有音频，可以发送飞书消息或开始今日训练。",
+    "New content arrived. Press Play to refresh.": "有新的内容，点击播放即可更新。",
+    "Ready.": "已经准备好。",
+  };
+  return translations[text] ?? text;
 }
 function ModeBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (

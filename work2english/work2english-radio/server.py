@@ -19,7 +19,7 @@ import logging
 import os
 import threading
 import time
-from datetime import datetime
+from datetime import date, datetime
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -37,12 +37,16 @@ from w2e.runtime import (
     PROJECT_ROOT, RUNTIME_DIR, OUTPUT_DIR, ensure_dirs,
     COLLECTOR_PID_FILE, LOGS_DIR, ensure_running,
 )
-from w2e import health, playback, generate, feishu
+from w2e import (
+    health, playback, generate, feishu, daily_digest, feishu_sources,
+    ollama, study as study_builder, daily_scheduler, content_pipeline,
+)
 from w2e.study import STUDY_DIR
 
 UI_DIST = PROJECT_ROOT / "ui" / "dist"
 HOST = "127.0.0.1"  # loopback by default; config server.bind: lan exposes to LAN
 PORT = int(os.environ.get("W2E_PORT") or os.environ.get("PORT") or "8000")
+DAILY_PREVIEW_FILE = RUNTIME_DIR / "daily_preview.json"
 
 _coordinator = generate.get_coordinator()
 
@@ -137,6 +141,7 @@ def build_state() -> dict:
     pstate, preason = health.player_health(study, day)
 
     from w2e import tts as tts_provider
+    preview = read_json(DAILY_PREVIEW_FILE, {})
 
     return {
         "day": day or datetime.now().strftime("%Y-%m-%d"),
@@ -152,7 +157,196 @@ def build_state() -> dict:
         "last_error": _coordinator.state.get("last_error"),
         "connectionStatus": {"feishu": fstate, "llm": lstate, "tts": tstate, "player": pstate},
         "diagnostics": {"feishu": freason, "llm": lreason, "tts": treason, "player": preason},
+        "daily_preview": preview if isinstance(preview, dict) else {},
     }
+
+
+def _api_item_from_preview(item: dict) -> dict:
+    return {
+        "time": item.get("time", ""),
+        "source": item.get("source", ""),
+        "original_zh": item.get("original_zh", ""),
+        "spoken_english": item.get("spoken_english", ""),
+        "focus_phrase": item.get("focus_phrase", ""),
+        "note_zh": item.get("note_zh", ""),
+        "audioUrl": "",
+    }
+
+
+def preview_generation_failed(payload: dict) -> bool:
+    items = payload.get("items", [])
+    if not items:
+        return True
+    fallback_count = 0
+    for item in items:
+        spoken = str(item.get("spoken_english", ""))
+        note = str(item.get("note_zh", ""))
+        if "Please check the study table" in spoken or "模型生成超时" in note:
+            fallback_count += 1
+    return fallback_count == len(items)
+
+
+def _preview_response_for_items(
+    config: dict,
+    target_day: date,
+    items: list[str],
+    *,
+    counts: dict | None = None,
+    issues: list[dict] | None = None,
+    digest_path: Path | None = None,
+    archive_path: Path | None = None,
+    candidate_path: Path | None = None,
+    candidates: list[dict] | None = None,
+) -> dict:
+    if not items:
+        return {
+            "ok": False,
+            "error": "今天没有找到适合生成英语简报的相关飞书内容。",
+            "counts": counts or {},
+            "issues": issues or [],
+        }
+    if not ollama.ensure_ollama_running(config):
+        response = {
+            "ok": False,
+            "error": "Ollama is unavailable; cannot generate English preview.",
+            "counts": counts or {},
+            "issues": issues or [],
+        }
+        if digest_path:
+            response["digest_path"] = str(digest_path.relative_to(PROJECT_ROOT))
+        if archive_path:
+            response["archive_path"] = str(archive_path.relative_to(PROJECT_ROOT))
+        if candidate_path:
+            response["candidate_path"] = str(candidate_path.relative_to(PROJECT_ROOT))
+        if candidates is not None:
+            response["candidates"] = candidates
+        return response
+    preview_input = daily_digest.render_digest_inbox(target_day, items)
+    payload = study_builder.build_study_payload(preview_input, config)
+    if preview_generation_failed(payload):
+        partial_ok = candidates is not None
+        response = {
+            "ok": partial_ok,
+            "preview_error": "英文预览生成失败；没有展示兜底英文。请稍后重试，或检查 Ollama 模型状态。",
+            "counts": counts or {},
+            "issues": issues or [],
+            "source_items": items,
+        }
+        if not partial_ok:
+            response["error"] = response["preview_error"]
+        if digest_path:
+            response["digest_path"] = str(digest_path.relative_to(PROJECT_ROOT))
+        if archive_path:
+            response["archive_path"] = str(archive_path.relative_to(PROJECT_ROOT))
+        if candidate_path:
+            response["candidate_path"] = str(candidate_path.relative_to(PROJECT_ROOT))
+        if candidates is not None:
+            response["candidates"] = candidates
+            write_json(DAILY_PREVIEW_FILE, response)
+        return response
+    response = {
+        "ok": True,
+        "day": target_day.isoformat(),
+        "updated_at": datetime.now().isoformat(timespec="seconds"),
+        "counts": counts or {},
+        "issues": issues or [],
+        "source_items": items,
+        "items": [_api_item_from_preview(item) for item in payload.get("items", [])],
+    }
+    if digest_path:
+        response["digest_path"] = str(digest_path.relative_to(PROJECT_ROOT))
+    if archive_path:
+        response["archive_path"] = str(archive_path.relative_to(PROJECT_ROOT))
+    if candidate_path:
+        response["candidate_path"] = str(candidate_path.relative_to(PROJECT_ROOT))
+    if candidates is not None:
+        response["candidates"] = candidates
+    write_json(DAILY_PREVIEW_FILE, response)
+    return response
+
+
+def build_daily_preview(config: dict, target_day: date, selected_texts: list[str] | None = None) -> dict:
+    if selected_texts:
+        clean_items = [daily_digest.clean_learning_text(str(item)) for item in selected_texts if str(item).strip()]
+        clean_items = clean_items[:daily_digest.learning_limit(config)]
+        return _preview_response_for_items(config, target_day, clean_items)
+
+    sources = feishu_sources.collect_sources(target_day)
+    counts = feishu_sources.source_counts(sources)
+    issues = feishu_sources.source_issues(sources)
+    archive_path = feishu_sources.write_source_archive(target_day, sources)
+    user_id = feishu_sources.current_user_id()
+    limit = daily_digest.learning_limit(config)
+    candidate_limit = int(config.get("daily_digest", {}).get("candidate_limit", 30))
+    candidates = content_pipeline.build_candidates(
+        sources, user_id, limit=candidate_limit, recommended_limit=limit,
+    )
+    candidate_path = content_pipeline.write_candidate_pool(target_day, candidates)
+    items = content_pipeline.selected_texts(candidates, limit=limit)
+    digest_path = daily_digest.write_digest_document(target_day, items, sources, config) if items else None
+    return _preview_response_for_items(
+        config,
+        target_day,
+        items,
+        counts=counts,
+        issues=issues,
+        digest_path=digest_path,
+        archive_path=archive_path,
+        candidate_path=candidate_path,
+        candidates=candidates,
+    )
+
+
+def build_daily_candidates(config: dict, target_day: date) -> dict:
+    sources = feishu_sources.collect_sources(target_day)
+    counts = feishu_sources.source_counts(sources)
+    issues = feishu_sources.source_issues(sources)
+    archive_path = feishu_sources.write_source_archive(target_day, sources)
+    limit = daily_digest.learning_limit(config)
+    candidate_limit = int(config.get("daily_digest", {}).get("candidate_limit", 30))
+    candidates = content_pipeline.build_candidates(
+        sources,
+        feishu_sources.current_user_id(),
+        limit=candidate_limit,
+        recommended_limit=limit,
+    )
+    candidate_path = content_pipeline.write_candidate_pool(target_day, candidates)
+    items = content_pipeline.selected_texts(candidates, limit=limit)
+    digest_path = daily_digest.write_digest_document(target_day, items, sources, config) if items else None
+    response = {
+        "ok": bool(candidates),
+        "day": target_day.isoformat(),
+        "updated_at": datetime.now().isoformat(timespec="seconds"),
+        "counts": counts,
+        "issues": issues,
+        "archive_path": str(archive_path.relative_to(PROJECT_ROOT)),
+        "candidate_path": str(candidate_path.relative_to(PROJECT_ROOT)),
+        "candidates": candidates,
+        "source_items": items,
+    }
+    if digest_path:
+        response["digest_path"] = str(digest_path.relative_to(PROJECT_ROOT))
+    if not candidates:
+        response["error"] = "今天没有找到适合生成英语简报的相关飞书内容。"
+    write_json(DAILY_PREVIEW_FILE, response)
+    return response
+
+
+def start_daily_generation_from_preview(config: dict) -> dict:
+    preview = read_json(DAILY_PREVIEW_FILE, {})
+    day_text = str(preview.get("day") or datetime.now().strftime("%Y-%m-%d"))
+    items = preview.get("source_items", [])
+    if not isinstance(items, list) or not items:
+        target_day = date.fromisoformat(day_text)
+        sources = feishu_sources.collect_sources(target_day)
+        items = daily_digest.curate_learning_items(sources, config, feishu_sources.current_user_id())
+        if not items:
+            return {"ok": False, "error": "没有可生成的 daily digest 内容。"}
+    daily_digest.write_digest_to_inbox(date.fromisoformat(day_text), [str(item) for item in items], config)
+    if _coordinator.running:
+        return {"ok": False, "already_running": True}
+    threading.Thread(target=_coordinator.run_now, args=(config,), daemon=True).start()
+    return {"ok": True, "started": True}
 
 
 # ─── HTTP handler ─────────────────────────────────────────────────────────────
@@ -337,6 +531,50 @@ class Handler(BaseHTTPRequestHandler):
             send_json(self, {"ok": True, "mode": mode})
             return
 
+        if path == "/api/daily-preview":
+            body = self._read_json()
+            if body is None:
+                send_json(self, {"ok": False, "error": "invalid json"}, status=400)
+                return
+            day_text = str(body.get("date") or datetime.now().strftime("%Y-%m-%d"))
+            selected_texts = body.get("selected_texts")
+            if selected_texts is not None and not isinstance(selected_texts, list):
+                send_json(self, {"ok": False, "error": "selected_texts must be a list"}, status=400)
+                return
+            try:
+                payload = build_daily_preview(load_config(), date.fromisoformat(day_text), selected_texts)
+            except Exception as exc:
+                logging.exception("daily preview failed.")
+                send_json(self, {"ok": False, "error": str(exc)}, status=500)
+                return
+            send_json(self, payload, status=200 if payload.get("ok") else 500)
+            return
+
+        if path == "/api/daily-candidates":
+            body = self._read_json()
+            if body is None:
+                send_json(self, {"ok": False, "error": "invalid json"}, status=400)
+                return
+            day_text = str(body.get("date") or datetime.now().strftime("%Y-%m-%d"))
+            try:
+                payload = build_daily_candidates(load_config(), date.fromisoformat(day_text))
+            except Exception as exc:
+                logging.exception("daily candidates failed.")
+                send_json(self, {"ok": False, "error": str(exc)}, status=500)
+                return
+            send_json(self, payload, status=200 if payload.get("ok") else 500)
+            return
+
+        if path == "/api/daily-generate":
+            try:
+                payload = start_daily_generation_from_preview(load_config())
+            except Exception as exc:
+                logging.exception("daily generation failed.")
+                send_json(self, {"ok": False, "error": str(exc)}, status=500)
+                return
+            send_json(self, payload, status=409 if payload.get("already_running") else 200)
+            return
+
         if path != "/api/generate":
             self.send_error(HTTPStatus.NOT_FOUND)
             return
@@ -372,6 +610,17 @@ def _collector_selfheal_loop() -> None:
     threading.Thread(target=loop, daemon=True).start()
 
 
+def _daily_preview_scheduler_loop() -> None:
+    def run(config: dict) -> None:
+        payload = build_daily_preview(config, date.today())
+        if payload.get("ok"):
+            logging.info("Scheduled daily Feishu preview ready: %s", payload.get("counts"))
+        else:
+            logging.warning("Scheduled daily Feishu preview failed: %s", payload.get("error"))
+
+    daily_scheduler.start_weekday_preview_scheduler(load_config, run)
+
+
 def main():
     ensure_dirs()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -379,6 +628,7 @@ def main():
         logging.warning("ui/dist not found — UI will show a build hint. Run `cd ui && npm run build`.")
 
     _collector_selfheal_loop()
+    _daily_preview_scheduler_loop()
 
     cfg = load_config()
     host = "0.0.0.0" if (cfg.get("server", {}) or {}).get("bind") == "lan" else HOST

@@ -20,12 +20,11 @@ export default function StudyTable() {
 
   if (!items.length) {
     return (
-      <div className="glass flex h-full min-h-[300px] flex-col items-center justify-center gap-3 rounded-os p-10 text-center">
-        <div className="telemetry">No content yet</div>
-        <p className="max-w-md text-haze">
-          Send a Chinese work message to the Feishu bot, or paste content into
-          <code className="mx-1 rounded bg-white/5 px-1.5 py-0.5 font-mono text-xs">inbox/feishu_raw.md</code>
-          then press Play.
+      <div className="glass flex min-h-[620px] flex-col items-center justify-center gap-3 rounded-2xl p-10 text-center">
+        <div className="text-xs font-semibold tracking-wide text-iris">学习记录</div>
+        <h2 className="font-display text-2xl font-semibold text-mist">还没有学习内容</h2>
+        <p className="max-w-md text-sm leading-relaxed text-haze">
+          你可以从“今日训练”开始，或者直接给飞书机器人发送一句中文工作内容。生成后的英文会自动出现在这里。
         </p>
       </div>
     );
@@ -34,28 +33,30 @@ export default function StudyTable() {
   const isPlaying = (i: number) => i === currentIndex && (status === "reading" || status === "paused");
 
   return (
-    <section className="glass flex min-h-0 flex-col rounded-os">
-      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-white/8 px-6 py-4">
+    <section className="glass flex min-h-[620px] flex-col rounded-2xl">
+      <header className="flex flex-wrap items-end justify-between gap-4 border-b border-white/8 px-5 py-5 md:px-7">
         <div>
-          <h2 className="font-display text-lg font-semibold tracking-tight text-mist">
-            Study Table <span className="text-haze font-light">· {day}</span>
+          <div className="text-xs font-semibold tracking-wide text-iris">学习记录</div>
+          <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight text-mist">
+            你的英语内容
           </h2>
-          <p className="telemetry mt-1">{items.length} items · level {level}</p>
+          <p className="mt-1 text-sm text-haze">{day || "今天"} · 共 {items.length} 条 · 难度 {level} → B1</p>
         </div>
         {dailyBriefing && (
-          <p className="max-w-[55%] text-sm leading-relaxed text-haze">{dailyBriefing}</p>
+          <p className="max-w-xl text-sm leading-relaxed text-haze">{dailyBriefing}</p>
         )}
       </header>
 
-      <div className="scroll-os min-h-0 flex-1 overflow-y-auto px-2 py-2">
-        <table className="w-full border-collapse">
+      <div className="min-h-0 flex-1 px-3 py-3 md:px-5">
+        <div className="scroll-os max-h-[calc(100dvh-360px)] min-h-[360px] overflow-auto rounded-xl border border-white/8 bg-white/[0.018]">
+          <table className="w-full min-w-[880px] border-collapse">
           <thead className="sticky top-0 z-10">
-            <tr className="telemetry text-haze">
+            <tr className="bg-abyss/95 text-xs text-haze backdrop-blur">
               <th className="px-3 py-2 text-left font-medium">#</th>
-              <th className="px-3 py-2 text-left font-medium">原文 · Chinese</th>
-              <th className="px-3 py-2 text-left font-medium">Spoken English</th>
-              <th className="px-3 py-2 text-left font-medium">Focus · Note</th>
-              <th className="px-3 py-2 text-left font-medium">Play</th>
+              <th className="px-3 py-2 text-left font-medium">中文原文</th>
+              <th className="px-3 py-2 text-left font-medium">自然英文</th>
+              <th className="px-3 py-2 text-left font-medium">重点短语 · 学习提示</th>
+              <th className="px-3 py-2 text-left font-medium">播放</th>
             </tr>
           </thead>
           <tbody>
@@ -69,7 +70,9 @@ export default function StudyTable() {
               />
             ))}
           </tbody>
-        </table>
+          </table>
+        </div>
+        <p className="mt-2 text-center text-xs text-haze/70 md:hidden">左右滑动查看完整内容</p>
       </div>
     </section>
   );

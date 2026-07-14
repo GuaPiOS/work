@@ -257,6 +257,15 @@ tail -n 40 logs/player.out.log
 
 也可以在 Finder 中双击 `open_study.command`。
 
+#### Web 界面使用方式
+
+打开本地 Web 界面后，主导航只有两个入口：
+
+- `今日训练`：系统自动准备当天飞书内容，默认推荐最多 3 条；确认后生成 A2 → B1 英文稿并开始播放。
+- `学习记录`：查看当天和历史生成内容。长内容在列表区域内滚动，表头会保持在顶部。
+
+直接给飞书机器人发送一句中文工作内容的入口保持不变，生成结果会自动出现在 `学习记录` 中。
+
 飞书机器人投喂会按天累积到 `inbox/feishu_raw.md`。`run.py --watch` 每次检测到当天内容变化后，会重新生成当天合集音频，并循环播放整天内容。跨天后，采集器会自动开始新的当天合集，同时把每日内容同步保存到 `inbox/daily/YYYY-MM-DD.md`。
 
 #### 当天飞书信息自动汇总
@@ -275,6 +284,12 @@ python daily_collect.py
 
 ```bash
 python daily_collect.py --collect-only
+```
+
+直接在终端查看中英对照预览、不生成音频：
+
+```bash
+python daily_collect.py --preview-english
 ```
 
 立即生成，忽略电脑空闲策略：
@@ -296,6 +311,26 @@ lark-cli auth login --scope "search:message calendar:calendar.event:read task:ta
 ```
 
 消息搜索会自动读取全部分页结果，但不会把所有群消息都交给本地模型。内容筛选由本地代码完成，因此只需要一次模型调用来生成 A2 → B1 英语，响应更稳定，也避免活跃大群淹没真正与你相关的信息。重复运行当天汇总会替换旧的 daily digest section，但保留你主动发给机器人的内容；原始机器人事件仍保存在 `inbox/events/`。当前版本不会自动读取消息中的附件正文、妙记全文或浏览过但没有聊天记录的文档。
+
+飞书拉取已重构为独立的采集层 `w2e/feishu_sources.py`：每个来源（messages / calendar / tasks）是一个 `SourceProvider`，各自负责 lark-cli 调用、分页、envelope 归一与错误处理；`collect_sources` 隔离运行各来源，单个来源失败只会记为空并告警，不会拖垮当天整体拉取。新增来源只需新增一个 provider 并注册。docs（消息里链接的文档正文）与 minutes（妙记 / 会议纪要）的 provider 接口已预留，但**尚未自动读取**：docs 需逐链接抓取与限流，minutes 的 lark-cli `minutes` / `note` 域可用但 envelope 与权限尚未验证。
+
+UI/server 常驻时，会按 `daily_digest.schedule` 在周一至周五自动刷新中英预览。默认时间是 `09:30`、`12:30`、`18:00`。打开界面后，如果后台已经自动拉取过，会直接显示最近一次预览；你也可以手动点“拉取并预览”刷新。
+
+内容进入学习材料前会做轻量清洗：明显的 @人名、飞书 at 标签、Odoo/订单/物流/运费等系统通知会被移除或过滤，避免把姓名和机器通知放进英语练习。
+
+如果某个来源拉取失败，失败原因会写入 source archive 和 digest 的 `Source Issues` 区块，并在命令行输出警告。`messages` 是 daily digest 的核心来源；如果 messages 拉取失败，默认不会继续生成英语音频，除非手动加 `--force-generate`。
+
+只验证飞书拉取是否可用、不写 inbox、不调用模型、不生成音频：
+
+```bash
+python feishu_fetch_mvp.py --source messages --limit 0
+```
+
+查看少量预览：
+
+```bash
+python feishu_fetch_mvp.py --source messages --limit 3
+```
 
 默认配置下，`daily_collect.py` 会先完成收集和 digest 写入，然后检查 `daily_digest.generation_policy`：
 
@@ -366,7 +401,7 @@ work2english-radio/
   config.example.yaml     # 配置模板（提交到仓库；真实 config.yaml 被 gitignore）
   config.yaml             # 本机真实配置（含 key，不提交）
   run.py / server.py / radio_service.py / feishu_collect.py   # 薄入口
-  w2e/                    # 核心包：config / runtime / feishu / llm / study / tts / generate / playback / health / cleanup
+  w2e/                    # 核心包：config / runtime / feishu / feishu_sources(采集层) / llm / study / tts / generate / playback / health / cleanup
   templates/study_table.html   # 学习表 HTML 模板
   prompts/
   inbox/  output/  runtime/  logs/   # 运行时数据（gitignore）

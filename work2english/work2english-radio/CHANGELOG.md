@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.3.1 - Unreleased
+
+### Changed
+
+- 重做 UI 信息架构：将“今日训练”和“学习记录”提升为两个清晰的用户入口；今日训练按“选择内容 → 英文稿 → 开始播放”推进，学习记录负责长期复习。
+- 统一用户界面为中文，隐藏技术路径和内部服务术语；系统状态改为“正常 / 待机 / 处理中 / 需要处理”等用户可理解的状态。
+- 移除固定视口高度和全局页面锁定滚动；学习记录增加独立滚动区域、固定表头和小屏横向查看提示。
+- 统一视觉为安静的工作台风格：减少玻璃层级、降低装饰噪声、使用中文友好字体和单一主色强调。
+
+- Extracted the Feishu acquisition logic out of `w2e/daily_digest.py` into a dedicated `w2e/feishu_sources.py` acquisition layer. Each source (messages, calendar, tasks) is now a `SourceProvider` that owns its lark-cli command, pagination, envelope normalization, and errors. Adding a source = add a provider and register it.
+- `collect_sources` now runs every active source **in isolation**: a single source failing (CLI error, bad JSON, network) is recorded as an empty list plus a visible `_issues` entry instead of aborting the whole daily pull. Previously any one failure lost all sources for the day.
+- `daily_digest.py` is now curation / rendering / policy only — no lark-cli calls remain in it.
+- `daily_collect.py` CLI arguments (`--date` / `--collect-only` / `--force-generate`) are unchanged; output now surfaces source warnings when a source pull is incomplete.
+- If the messages source fails, `daily_collect.py` writes the digest and archive but skips English/audio generation by default. Use `--force-generate` only when an incomplete digest is acceptable.
+- The UI/server now auto-refreshes the daily Feishu English preview on weekdays using `daily_digest.schedule`.
+- Daily digest curation now removes obvious @mentions / Feishu at-tags and filters low-value machine notices such as Odoo freight, logistics, order status, and identifier-heavy messages.
+
+### Added
+
+- Reserved provider interfaces for future sources: `DocsInMessagesProvider` (doc bodies linked in messages) and `MinutesProvider` (meeting minutes / transcripts). Both are inactive by design — lark-cli's `minutes` / `note` domains exist, but the response envelopes and required permissions are unverified, and doc fetching needs per-link rate limiting + dedup. Their interfaces and TODO reasoning are documented in code so activation is a one-flag flip.
+- Added `feishu_fetch_mvp.py`, a minimal Feishu fetch smoke-test command that prints counts and optional previews without touching the inbox, Ollama, TTS, or playback.
+- Added `daily_collect.py --preview-english` to print a bilingual preview in the terminal without writing the playback inbox, synthesizing audio, or starting playback.
+- Added `w2e/daily_scheduler.py` for weekday preview scheduling.
+
+### Verified
+
+- Added `tests/test_feishu_sources.py` covering each provider's command shape, envelope normalization (`items` / `messages` / `events` / `tasks` keys, bare list, nested `data` / `result`), empty results, CLI errors, per-source isolation in `collect_sources`, visible source issues, reserved (inactive) providers, and the source-archive gitignore contract.
+
 ## 0.3.0 - 2026-07-13
 
 ### Added
