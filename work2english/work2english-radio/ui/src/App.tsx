@@ -44,9 +44,11 @@ export default function App() {
       <AmbientBackground />
 
       <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-[1520px] flex-col gap-4 px-4 py-4 md:px-6 md:py-6">
-        <SystemStatus />
-
         <div className="flex min-h-0 flex-1 flex-col gap-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="min-w-[min(100%,420px)] flex-1">
+              <SystemStatus />
+            </div>
           <nav
             className="glass-soft flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-2xl px-3 py-2"
             aria-label="主导航"
@@ -64,6 +66,7 @@ export default function App() {
               <span>直接发给飞书机器人也会自动进入学习记录</span>
             </div>
           </nav>
+          </div>
 
           <main className="min-h-0 flex-1">
             {view === "today" ? <DailyDigestPanel /> : <StudyTable />}

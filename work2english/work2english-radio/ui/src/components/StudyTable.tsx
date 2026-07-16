@@ -38,22 +38,26 @@ export default function StudyTable() {
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
           <div className="text-xs font-semibold tracking-wide text-iris">学习记录</div>
-          <h2 className="mt-1.5 font-display text-xl font-semibold tracking-tight text-mist md:text-2xl">
-            你的英语内容
-          </h2>
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            <h2 className="font-display text-lg font-semibold tracking-tight text-mist md:text-xl">
+              你的英语内容
+            </h2>
+            {dailyBriefing && (
+              <details className="group relative inline-block">
+                <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-xs text-haze hover:border-white/20 hover:text-mist">
+                  今日摘要
+                  <span className="text-[11px] transition-transform group-open:rotate-180">⌄</span>
+                </summary>
+                <div className="absolute left-0 top-[calc(100%+0.5rem)] z-30 w-[min(420px,calc(100vw-3rem))] rounded-xl border border-white/12 bg-[#0A0D18] p-3 text-sm leading-relaxed text-haze shadow-2xl">
+                  {dailyBriefing}
+                </div>
+              </details>
+            )}
+          </div>
           <p className="mt-1 text-sm text-haze">{day || "今天"} · 共 {items.length} 条 · 难度 {level} → B1</p>
           </div>
           <span className="rounded-full bg-white/[0.05] px-3 py-1.5 text-xs text-haze">点击一行即可播放</span>
         </div>
-        {dailyBriefing && (
-          <details className="group mt-3 rounded-xl border border-white/8 bg-white/[0.025]">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-sm text-haze hover:text-mist">
-              <span className="font-medium">今日摘要</span>
-              <span className="text-xs text-haze/70 transition-transform group-open:rotate-180">⌄</span>
-            </summary>
-            <p className="border-t border-white/8 px-3 py-3 text-sm leading-relaxed text-haze">{dailyBriefing}</p>
-          </details>
-        )}
       </header>
 
       <div className="min-h-0 flex-1 px-3 py-3 md:px-5">

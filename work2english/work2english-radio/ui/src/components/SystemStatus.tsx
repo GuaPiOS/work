@@ -124,7 +124,7 @@ export default function SystemStatus() {
           <summary className="cursor-pointer list-none rounded-xl px-2 py-2 text-xs text-haze hover:bg-white/[0.05] hover:text-mist">
             查看状态
           </summary>
-          <div className="absolute right-0 top-[calc(100%+0.5rem)] z-[60] grid min-w-[240px] gap-3 rounded-xl border border-white/10 bg-abyss/98 p-4 shadow-2xl backdrop-blur-xl">
+          <div className="absolute right-0 top-[calc(100%+0.5rem)] z-[60] grid min-w-[240px] gap-3 rounded-xl border border-white/12 bg-[#0A0D18] p-4 shadow-2xl">
             {SERVICES.map((s) => (
               <ServiceDot
                 key={s.key}
