@@ -17,7 +17,9 @@ export default function App() {
   const init = useVoiceOS((s) => s.init);
   const registerAudio = useVoiceOS((s) => s.registerAudio);
   const togglePlay = useVoiceOS((s) => s.togglePlay);
-  const [view, setView] = useState<AppView>("today");
+  // The useful thing to see after opening the app is the finished lesson.
+  // Today’s workflow remains one click away for refreshing or curating content.
+  const [view, setView] = useState<AppView>("history");
 
   useEffect(() => {
     registerAudio(audioRef.current);
@@ -50,11 +52,11 @@ export default function App() {
             aria-label="主导航"
           >
             <div className="flex items-center gap-1">
-              <NavButton active={view === "today"} onClick={() => setView("today")}>
-                今日训练
-              </NavButton>
               <NavButton active={view === "history"} onClick={() => setView("history")}>
                 学习记录
+              </NavButton>
+              <NavButton active={view === "today"} onClick={() => setView("today")}>
+                今日训练
               </NavButton>
             </div>
             <div className="hidden items-center gap-2 text-xs text-haze md:flex">

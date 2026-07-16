@@ -57,7 +57,7 @@ def test_compose_daily_briefing_dedupes_and_wraps():
         {"spoken_english": "Hello there."},  # dup of item 0
     ]
     out = study.compose_daily_briefing(items)
-    assert out.startswith("Here is the latest English briefing.")
+    assert out.startswith("Here’s a quick update from today.")
     assert "Hello there." in out
     assert "Second line." in out
     # dup appears once
@@ -66,7 +66,7 @@ def test_compose_daily_briefing_dedupes_and_wraps():
 
 def test_compose_daily_briefing_single_item():
     out = study.compose_daily_briefing([{"spoken_english": "Only one."}])
-    assert out == "Here is the latest English briefing. Only one."
+    assert out == "Here’s a quick update from today. Only one."
 
 
 def test_compose_daily_briefing_empty():
@@ -88,7 +88,7 @@ def test_normalize_study_payload_preserves_source_order_and_fills_missing():
     assert payload["items"][0]["focus_phrase"] == "one"
     # missing second item falls back to the Chinese source so playback never blanks
     assert payload["items"][1]["spoken_english"] == "原文二"
-    assert payload["daily_briefing"].startswith("Here is the latest English briefing.")
+    assert payload["daily_briefing"].startswith("Here’s a quick update from today.")
 
 
 def test_build_study_payload_passes_current_to_target_level(monkeypatch):

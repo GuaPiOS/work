@@ -48,6 +48,8 @@ def test_build_study_prompt_includes_level_and_count():
     assert "你好" in prompt
     assert "exactly 2 lines" in prompt
     assert "|||" in prompt
+    assert "friendly coworker" in prompt
+    assert "reusable everyday sentence pattern" in prompt
 
 
 def test_extract_study_rows_parses_simple_protocol():

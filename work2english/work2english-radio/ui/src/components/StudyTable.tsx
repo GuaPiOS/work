@@ -20,7 +20,7 @@ export default function StudyTable() {
 
   if (!items.length) {
     return (
-      <div className="glass flex min-h-[620px] flex-col items-center justify-center gap-3 rounded-2xl p-10 text-center">
+      <div className="glass flex min-h-[520px] flex-col items-center justify-center gap-3 rounded-2xl p-10 text-center">
         <div className="text-xs font-semibold tracking-wide text-iris">学习记录</div>
         <h2 className="font-display text-2xl font-semibold text-mist">还没有学习内容</h2>
         <p className="max-w-md text-sm leading-relaxed text-haze">
@@ -33,29 +33,38 @@ export default function StudyTable() {
   const isPlaying = (i: number) => i === currentIndex && (status === "reading" || status === "paused");
 
   return (
-    <section className="glass flex min-h-[620px] flex-col rounded-2xl">
-      <header className="flex flex-wrap items-end justify-between gap-4 border-b border-white/8 px-5 py-5 md:px-7">
-        <div>
+    <section className="glass flex min-h-[520px] flex-col rounded-2xl">
+      <header className="shrink-0 border-b border-white/8 px-5 py-4 md:px-7 md:py-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
           <div className="text-xs font-semibold tracking-wide text-iris">学习记录</div>
-          <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight text-mist">
+          <h2 className="mt-1.5 font-display text-xl font-semibold tracking-tight text-mist md:text-2xl">
             你的英语内容
           </h2>
           <p className="mt-1 text-sm text-haze">{day || "今天"} · 共 {items.length} 条 · 难度 {level} → B1</p>
+          </div>
+          <span className="rounded-full bg-white/[0.05] px-3 py-1.5 text-xs text-haze">点击一行即可播放</span>
         </div>
         {dailyBriefing && (
-          <p className="max-w-xl text-sm leading-relaxed text-haze">{dailyBriefing}</p>
+          <details className="group mt-3 rounded-xl border border-white/8 bg-white/[0.025]">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-sm text-haze hover:text-mist">
+              <span className="font-medium">今日摘要</span>
+              <span className="text-xs text-haze/70 transition-transform group-open:rotate-180">⌄</span>
+            </summary>
+            <p className="border-t border-white/8 px-3 py-3 text-sm leading-relaxed text-haze">{dailyBriefing}</p>
+          </details>
         )}
       </header>
 
       <div className="min-h-0 flex-1 px-3 py-3 md:px-5">
-        <div className="scroll-os max-h-[calc(100dvh-360px)] min-h-[360px] overflow-auto rounded-xl border border-white/8 bg-white/[0.018]">
+        <div className="scroll-os max-h-[calc(100dvh-285px)] min-h-[390px] overflow-auto rounded-xl border border-white/8 bg-white/[0.018]">
           <table className="w-full min-w-[880px] border-collapse">
           <thead className="sticky top-0 z-10">
             <tr className="bg-abyss/95 text-xs text-haze backdrop-blur">
               <th className="px-3 py-2 text-left font-medium">#</th>
               <th className="px-3 py-2 text-left font-medium">中文原文</th>
               <th className="px-3 py-2 text-left font-medium">自然英文</th>
-              <th className="px-3 py-2 text-left font-medium">重点短语 · 学习提示</th>
+              <th className="px-3 py-2 text-left font-medium">常用句型 · 简单提示</th>
               <th className="px-3 py-2 text-left font-medium">播放</th>
             </tr>
           </thead>

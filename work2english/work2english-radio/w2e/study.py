@@ -114,11 +114,11 @@ def compose_daily_briefing(items: list[dict]) -> str:
     if not lines:
         return ""
     if len(lines) == 1:
-        return f"Here is the latest English briefing. {lines[0]}"
+        return f"Here’s a quick update from today. {lines[0]}"
     max_lines = 8
     selected = lines[:max_lines]
-    suffix = " Check today's study table for the full set of practice clips." if len(lines) > max_lines else ""
-    return "Here is the latest English briefing. " + " ".join(selected) + suffix
+    suffix = " You can review the full set in today’s study table." if len(lines) > max_lines else ""
+    return "Here’s a quick update from today. " + " ".join(selected) + suffix
 
 
 def normalize_study_payload(payload: dict, source_items: list[dict]) -> dict:

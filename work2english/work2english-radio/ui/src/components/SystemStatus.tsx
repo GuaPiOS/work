@@ -95,7 +95,7 @@ export default function SystemStatus() {
   const overall = overallStatus(connection);
 
   return (
-    <header className="glass flex flex-wrap items-center justify-between gap-4 rounded-2xl px-5 py-3.5 md:px-6">
+    <header className="glass relative z-50 flex flex-wrap items-center justify-between gap-4 rounded-2xl px-5 py-3.5 md:px-6">
       <div className="flex shrink-0 items-center gap-3">
         <div
           className="grid h-8 w-8 place-items-center rounded-xl"
@@ -124,7 +124,7 @@ export default function SystemStatus() {
           <summary className="cursor-pointer list-none rounded-xl px-2 py-2 text-xs text-haze hover:bg-white/[0.05] hover:text-mist">
             查看状态
           </summary>
-          <div className="absolute right-0 top-11 z-30 grid min-w-[210px] gap-3 rounded-xl border border-white/10 bg-abyss/95 p-4 shadow-2xl backdrop-blur-xl">
+          <div className="absolute right-0 top-[calc(100%+0.5rem)] z-[60] grid min-w-[240px] gap-3 rounded-xl border border-white/10 bg-abyss/98 p-4 shadow-2xl backdrop-blur-xl">
             {SERVICES.map((s) => (
               <ServiceDot
                 key={s.key}

@@ -61,7 +61,7 @@ def build_study_prompt(level: str, items: list[dict]) -> str:
     return f"""/no_think
 You are a precise workplace English learning assistant.
 
-Convert Chinese workplace notes into natural spoken English for listening practice.
+Convert Chinese workplace notes into simple, natural spoken English for listening practice.
 
 Return exactly one line per input item. Do not use JSON or Markdown.
 Each line must use this format:
@@ -69,17 +69,19 @@ ID|||spoken English|||useful English phrase|||short Chinese learning note
 
 Rules:
 1. Keep business meaning accurate. Do not add facts.
-2. Use {level} level English.
-3. Use natural spoken workplace English, not stiff written translation.
-4. Prefer short sentences, contractions where natural, and clear transitions.
-5. Return exactly {len(items)} lines and keep the same id/order as the input.
-6. Each spoken_english item should be easy to compare with the original Chinese.
-7. Keep each spoken_english under 45 words unless the source item needs more detail.
-8. Do not output Chinese inside spoken_english.
-9. note_zh must be concise.
-10. Do not mention metadata such as p2p, channel, message ID, item count, or source type.
-11. Avoid filler such as "let's take a closer look" unless the original text says that.
-12. Never use ||| inside a field.
+2. Stay near {level}: mostly A2 words and grammar, with a small step toward B1.
+3. Translate the speaker's intent, not each Chinese word. Write what a friendly coworker would actually say out loud.
+4. Prefer short sentences, contractions where natural, and clear transitions. Use common verbs such as "check", "send", "need", "plan", "fix", and "confirm".
+5. Avoid stiff business English, long noun phrases, idioms, rare words, and formal words such as "facilitate", "utilize", or "regarding".
+6. Return exactly {len(items)} lines and keep the same id/order as the input.
+7. Each spoken_english item should be easy to compare with the original Chinese.
+8. Keep each spoken_english under 35 words unless the source item needs more detail.
+9. Do not output Chinese inside spoken_english.
+10. useful English phrase must be one reusable everyday sentence pattern, not a difficult vocabulary item. Prefer patterns such as "Could you + verb...?", "Can we + verb...?", "I’ll + verb...", "We need to + verb...", "Let’s + verb...", or "The main issue is...". Keep it under 8 words when possible.
+11. note_zh must be a very short, friendly Chinese explanation (under 20 Chinese characters). Explain when to use the pattern; do not use grammar jargon.
+12. Do not mention metadata such as p2p, channel, message ID, item count, or source type.
+13. Avoid filler such as "let's take a closer look" unless the original text says that.
+14. Never use ||| inside a field.
 
 Input items ({len(items)} items):
 {payload}

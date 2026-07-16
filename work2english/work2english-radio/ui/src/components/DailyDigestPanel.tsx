@@ -85,8 +85,8 @@ export default function DailyDigestPanel() {
   const selectedCount = selectedIds.length;
 
   return (
-    <section className="glass flex min-h-[620px] flex-col rounded-2xl">
-      <div className="shrink-0 border-b border-white/8 px-5 py-5 md:px-7">
+    <section className="glass flex min-h-[520px] flex-col rounded-2xl">
+      <div className="shrink-0 border-b border-white/8 px-5 py-4 md:px-7 md:py-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="text-xs font-semibold tracking-wide text-iris">TODAY · {new Date().toLocaleDateString("zh-CN", { month: "long", day: "numeric" })}</div>
@@ -217,7 +217,7 @@ export default function DailyDigestPanel() {
             <div className="flex shrink-0 items-center justify-between gap-3">
               <div>
                 <div className="text-sm font-semibold text-mist">英文稿</div>
-                <p className="mt-1 text-xs text-haze">每条内容包含中文原文、自然英文、重点短语和学习提示。</p>
+                <p className="mt-1 text-xs text-haze">每条内容包含中文原文、口语英文、常用句型和简单提示。</p>
               </div>
               {items.length > 0 && <span className="text-xs text-haze">难度 A2 → B1</span>}
             </div>
