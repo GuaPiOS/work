@@ -63,7 +63,7 @@ export default function StudyTable() {
             <tr className="bg-abyss/95 text-xs text-haze backdrop-blur">
               <th className="px-3 py-2 text-left font-medium">#</th>
               <th className="px-3 py-2 text-left font-medium">中文原文</th>
-              <th className="px-3 py-2 text-left font-medium">自然英文</th>
+              <th className="px-3 py-2 text-left font-medium">口语英文</th>
               <th className="px-3 py-2 text-left font-medium">常用句型 · 简单提示</th>
               <th className="px-3 py-2 text-left font-medium">播放</th>
             </tr>
