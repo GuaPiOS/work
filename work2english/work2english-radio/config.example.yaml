@@ -79,7 +79,7 @@ fish_audio:
 
 player:
   enabled: true
-  mode: "auto"            # auto | daily （single/list 由 auto 智能覆盖，保留兼容）
+  mode: "daily"           # daily（默认播放当天全部内容）| auto（只播放最新一批）| single | list
   loop: true
   interval_seconds: 5
   local_fallback: true    # 无浏览器客户端在线时，是否用本地 afplay 兜底播放

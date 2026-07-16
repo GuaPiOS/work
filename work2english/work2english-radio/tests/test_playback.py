@@ -30,6 +30,13 @@ def test_select_playback_items_daily_returns_all():
     assert len(sel) == 4
 
 
+def test_select_playback_items_missing_mode_defaults_to_daily():
+    payload = _payload(n_latest=3, n_older=2)
+    mode, sel = playback.select_playback_items(payload, {})
+    assert mode == "daily"
+    assert len(sel) == 5
+
+
 def test_select_playback_items_auto_multi_returns_latest_batch():
     payload = _payload(n_latest=3, n_older=2)
     mode, sel = playback.select_playback_items(payload, {"player": {"mode": "auto"}})

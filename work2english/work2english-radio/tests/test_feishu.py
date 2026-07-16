@@ -84,3 +84,22 @@ def test_dedupe_fingerprint_differs_by_chat():
 def test_truncate_input():
     assert feishu.truncate_input("短", 10) == "短"
     assert len(feishu.truncate_input("x" * 100, 10)) == 10
+
+
+def test_append_daily_inbox_keeps_all_same_day_bot_messages(tmp_path, monkeypatch):
+    input_file = tmp_path / "feishu_raw.md"
+    daily_dir = tmp_path / "daily"
+    monkeypatch.setattr(feishu, "DAILY_DIR", daily_dir)
+    config = {
+        "input_file": str(input_file),
+        "collector": {"daily_rollup": True, "max_daily_chars": 20000},
+    }
+
+    feishu.append_daily_inbox("第一句", config, {"collected_date": "2026-07-16", "message_id": "m1"})
+    feishu.append_daily_inbox("第二句", config, {"collected_date": "2026-07-16", "message_id": "m2"})
+
+    content = input_file.read_text(encoding="utf-8")
+    assert "第一句" in content
+    assert "第二句" in content
+    assert "Message ID: m1" in content
+    assert "Message ID: m2" in content

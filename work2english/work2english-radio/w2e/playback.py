@@ -127,7 +127,10 @@ def select_playback_items(payload: dict, config: dict) -> tuple[str, list[dict]]
     items = payload.get("items", []) if isinstance(payload, dict) else []
     if not items:
         return "single", []
-    mode = str(config.get("player", {}).get("mode", "auto")).strip().lower()
+    # Daily playback is the safe default: direct bot messages accumulate into
+    # today's learning set and must not silently disappear from the queue.
+    # "auto" remains available as an explicit latest-message mode.
+    mode = str(config.get("player", {}).get("mode", "daily")).strip().lower()
     latest_items = latest_batch_items(items)
     if mode == "single":
         return "single", latest_items[-1:] or items[-1:]
@@ -135,7 +138,7 @@ def select_playback_items(payload: dict, config: dict) -> tuple[str, list[dict]]
         return "list", latest_items or items
     if mode == "daily":
         return "daily", items
-    # auto: one short message repeats as a single sentence; multi-part repeats as a list.
+    # auto is an explicit opt-in latest-message mode.
     if len(latest_items) <= 1:
         return "single", latest_items or items[-1:]
     return "list", latest_items
@@ -153,7 +156,7 @@ def build_player_control(day: str, payload: dict | None, config: dict) -> dict:
     player_config = config.get("player", {})
     interval_seconds = int(player_config.get("interval_seconds", 5))
     loop = bool(player_config.get("loop", True))
-    default_mode = str(player_config.get("mode", "auto")).strip().lower() or "auto"
+    default_mode = str(player_config.get("mode", "daily")).strip().lower() or "daily"
 
     playlist = []
     mode = default_mode

@@ -388,7 +388,7 @@ python feishu_collect.py
 - `llm.num_predict`: 模型最大输出长度，默认 `1200`；如果长文档条目很多但生成 JSON 不完整，可以临时调大
 - `collector.ignore_events_older_than_start_seconds`: 忽略启动前太久的飞书补发事件，默认 `120`
 - `collector.duplicate_text_window_seconds`: 同一聊天同一发送者同文本的去重窗口，默认 `600`
-- `player.mode`: 播放重复模式，默认 `auto`；可选 `single` / `list` / `daily`
+- `player.mode`: 播放范围，默认 `daily`（当天全部内容）；可选 `auto`（只播放最新一批）、`single` / `list`
 - `player.loop`: 是否循环播放
 - `player.interval_seconds`: 两次播放间隔秒数
 
